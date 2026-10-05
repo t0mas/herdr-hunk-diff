@@ -197,6 +197,25 @@ export class ReviewIndex {
     return Object.values(this.read());
   }
 
+  /**
+   * The deepest entry with an associated agent whose worktree strictly contains `worktree`. A repo
+   * nested inside an agent's checkout (e.g. `<worktree>/repos/api`) has no agent of its own, because
+   * herdr reports the agent's pane in the enclosing checkout.
+   */
+  enclosingAgent(worktree: string): ReviewEntry | undefined {
+    const sep = this.platform === "win32" ? "\\" : "/";
+    const child = this.worktreeIdentity(worktree).key;
+    let best: { entry: ReviewEntry; depth: number } | undefined;
+    for (const entry of this.all()) {
+      if (!entry?.agentPaneId || typeof entry.worktree !== "string") continue;
+      const parent = this.worktreeIdentity(entry.worktree).key;
+      const prefix = parent.endsWith(sep) ? parent : parent + sep;
+      if (child === parent || !child.startsWith(prefix)) continue;
+      if (!best || parent.length > best.depth) best = { entry, depth: parent.length };
+    }
+    return best?.entry;
+  }
+
   /** Keeps delivery history deduplicated and limited to nonempty string ids. */
   private static ids(stored: unknown): string[] {
     if (!Array.isArray(stored)) return [];

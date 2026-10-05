@@ -208,8 +208,10 @@ async function sendReview(rt: Runtime): Promise<number> {
   }
 
   const entry = rt.index.get(worktree);
-  const target = agentPaneFromContext(rt) ?? entry?.agentPaneId;
-  const label = rt.ctx.agentName ?? entry?.agentName;
+  // A nested repository reviewed on its own falls back to the agent of the checkout around it.
+  const owner = entry?.agentPaneId ? entry : rt.index.enclosingAgent(worktree);
+  const target = agentPaneFromContext(rt) ?? owner?.agentPaneId;
+  const label = rt.ctx.agentName ?? owner?.agentName;
   if (!target) {
     return reportFailure(rt.herdr, "No agent is associated with this worktree; comments kept.");
   }

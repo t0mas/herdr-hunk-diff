@@ -12,6 +12,25 @@ describe("ReviewIndex", () => {
     expect(new ReviewIndex(dir()).get("/wt/x")).toBeUndefined();
   });
 
+  describe("enclosingAgent", () => {
+    it("finds the deepest enclosing worktree with an agent", () => {
+      const idx = new ReviewIndex(dir());
+      idx.upsert({ worktree: "/ws", agentPaneId: "w1:p1", sent: [] });
+      idx.upsert({ worktree: "/ws/worktrees/feat", agentPaneId: "w2:p1", sent: [] });
+      expect(idx.enclosingAgent("/ws/worktrees/feat/repos/api")?.agentPaneId).toBe("w2:p1");
+    });
+
+    it("ignores the worktree itself, siblings with a shared prefix, and entries without an agent", () => {
+      const idx = new ReviewIndex(dir());
+      idx.upsert({ worktree: "/ws/feat", agentPaneId: "w1:p1", sent: [] });
+      idx.upsert({ worktree: "/ws/feat-2", agentPaneId: "w2:p1", sent: [] });
+      idx.upsert({ worktree: "/ws/feat-2/repos", sent: [] });
+      expect(idx.enclosingAgent("/ws/feat")).toBeUndefined();
+      expect(idx.enclosingAgent("/ws/feat-2/repos/api")?.agentPaneId).toBe("w2:p1");
+      expect(idx.enclosingAgent("/elsewhere/api")).toBeUndefined();
+    });
+  });
+
   describe("Windows worktree identity", () => {
     it("recovers a unique stored alias after the worktree disappears", () => {
       let exists = true;

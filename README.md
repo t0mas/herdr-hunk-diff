@@ -425,6 +425,10 @@ record that pane as the delivery target. Matching agent-status events also recor
 The index stores one delivery target per worktree. If multiple agents share a checkout, invoke
 `send-review` from the intended agent pane or reopen the review from that pane before sending.
 
+A repository nested inside an agent's checkout (for example `<worktree>/repos/api`, reviewed on its
+own) has no agent of its own. `send-review` then delivers to the agent of the nearest enclosing
+worktree.
+
 </details>
 
 <details>

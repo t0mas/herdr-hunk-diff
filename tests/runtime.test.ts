@@ -200,6 +200,24 @@ describe("dispatch", () => {
     expect(rt.herdr.notify).toHaveBeenCalledWith(expect.stringContaining("comments were not sent"));
   });
 
+  it("sends a nested repository's comments to the agent of the enclosing worktree", async () => {
+    const rt = runtime({
+      ctx: { worktree: "/wt/x/repos/api" },
+      target: { worktree: "/wt/x/repos/api", mode: "working" as const },
+      hunk: {
+        listComments: vi.fn(async () => [
+          { noteId: "c1", filePath: "src/a.ts", newRange: [3, 3], body: "Fix" },
+        ]),
+        removeComment: vi.fn(async () => {}),
+        reload: vi.fn(async () => {}),
+      },
+    });
+    rt.index.upsert({ worktree: "/wt/x", agentName: "codex", agentPaneId: "w1:p3", sent: [] });
+    expect(await dispatch("send-review", rt as any)).toBe(0);
+    expect(rt.herdr.promptAgent).toHaveBeenCalledWith("w1:p3", expect.stringContaining("Fix"));
+    expect(rt.index.sentIds("/wt/x/repos/api")).toEqual(["c1"]);
+  });
+
   it("notifies that no agent is associated with the worktree and exits 1", async () => {
     const rt = runtime({
       ctx: { worktree: "/wt/x" },
